@@ -3,6 +3,7 @@ import pandas as pd
 import yfinance as yf
 import ta
 import io
+import requests
 
 # Function to fetch stock indicators
 def fetch_indicators(stock):
@@ -58,6 +59,29 @@ def fetch_indicators(stock):
             'Beta': None,
             'Close': None
         }
+
+# Function to fetch news
+def fetch_news():
+    news = []
+    urls = [
+        "https://service.upstox.com/content/open/v5/news/sub-category/news/list//market-news/stocks?page=1&pageSize=500",
+        "https://groww.in/v1/api/groww_news/v1/stocks_news/news?page=1&size=600"
+    ]
+    
+    for url in urls:
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                news_data = response.json()
+                if 'data' in news_data:
+                    for item in news_data['data']:
+                        title = item.get('title', 'No title')
+                        date = item.get('publishedAt', 'No date')
+                        news.append({'title': title, 'date': date})
+        except Exception as e:
+            st.error(f"Error fetching news: {e}")
+    
+    return news
 
 # Function to score stocks based on indicators for different terms
 def score_stock(indicators, term):
@@ -221,6 +245,15 @@ if st.button("Login"):
             st.subheader("Top 20 Long Term Trades")
             long_term_df = pd.DataFrame(recommendations['Long Term']).sort_values(by='Score', ascending=False).head(20)
             st.table(long_term_df)
+
+            # Fetch and display news
+            st.subheader("Latest Stock News")
+            news = fetch_news()
+            if news:
+                for article in news:
+                    st.write(f"**{article['title']}** - {article['date']}")
+            else:
+                st.write("No news available.")
 
             # Export to Excel
             output = io.BytesIO()
