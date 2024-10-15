@@ -60,28 +60,44 @@ def fetch_indicators(stock):
             'Close': None
         }
 
-# Function to fetch news
+# Function to fetch news from Upstox
+def fetch_news_upstox():
+    url = "https://service.upstox.com/content/open/v5/news/sub-category/news/list//market-news/stocks?page=1&pageSize=500"
+    response = requests.get(url)
+    if response.status_code == 200:
+        news_data = response.json()
+        if news_data.get("success"):
+            return [
+                {
+                    "headline": article["headline"],
+                    "date": article["publishedAt"],
+                    "url": article["contentUrl"]
+                }
+                for article in news_data["data"]
+            ]
+    return []
+
+# Function to fetch news from Groww
+def fetch_news_groww():
+    url = "https://groww.in/v1/api/groww_news/v1/stocks_news/news?page=1&size=600"
+    response = requests.get(url)
+    if response.status_code == 200:
+        news_data = response.json()
+        return [
+            {
+                "headline": article["title"],
+                "date": article["pubDate"],
+                "url": article["url"]
+            }
+            for article in news_data["results"]
+        ]
+    return []
+
+# Function to fetch all news
 def fetch_news():
-    news = []
-    urls = [
-        "https://service.upstox.com/content/open/v5/news/sub-category/news/list//market-news/stocks?page=1&pageSize=500",
-        "https://groww.in/v1/api/groww_news/v1/stocks_news/news?page=1&size=600"
-    ]
-    
-    for url in urls:
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                news_data = response.json()
-                if 'data' in news_data:
-                    for item in news_data['data']:
-                        title = item.get('title', 'No title')
-                        date = item.get('publishedAt', 'No date')
-                        news.append({'title': title, 'date': date})
-        except Exception as e:
-            st.error(f"Error fetching news: {e}")
-    
-    return news
+    news_upstox = fetch_news_upstox()
+    news_groww = fetch_news_groww()
+    return news_upstox + news_groww
 
 # Function to score stocks based on indicators for different terms
 def score_stock(indicators, term):
@@ -251,7 +267,7 @@ if st.button("Login"):
             news = fetch_news()
             if news:
                 for article in news:
-                    st.write(f"**{article['title']}** - {article['date']}")
+                    st.write(f"**{article['headline']}** - {article['date']} [Read more]({article['url']})")
             else:
                 st.write("No news available.")
 
