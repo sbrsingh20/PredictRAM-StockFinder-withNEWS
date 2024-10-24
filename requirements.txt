@@ -4,3 +4,4 @@ pandas
 openpyxl
 ta
 requests
+plotly
